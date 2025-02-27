@@ -6,7 +6,7 @@ var fs = require('fs');
 var path = require('path');
 var debug = require('debug')('mocha-junit-reporter');
 var mkdirp = require('mkdirp');
-var md5 = require('md5');
+var { createHash } = require("node:crypto");
 var stripAnsi = require('strip-ansi');
 
 // Save timer references so that times are correct even if Date is stubbed.
@@ -36,6 +36,13 @@ module.exports = MochaJUnitReporter;
 // A subset of invalid characters as defined in http://www.w3.org/TR/xml/#charsets that can occur in e.g. stacktraces
 // regex lifted from https://github.com/MylesBorins/xml-sanitizer/ (licensed MIT)
 var INVALID_CHARACTERS_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007f-\u0084\u0086-\u009f\uD800-\uDFFF\uFDD0-\uFDFF\uFFFF\uC008]/g; //eslint-disable-line no-control-regex
+
+function getHashFromString(data) {
+  const hash = createHash("sha256");
+  hash.update(data);
+  return hash.digest("hex");
+}
+
 
 function findReporterOptions(options) {
   debug('Checking for options in', options);
@@ -422,7 +429,7 @@ MochaJUnitReporter.prototype.formatReportFilename = function(xml, testsuites) {
   var reportFilename = this._options.mochaFile;
 
   if (reportFilename.indexOf('[hash]') !== -1) {
-    reportFilename = reportFilename.replace('[hash]', md5(xml));
+    reportFilename = reportFilename.replace('[hash]', getHashFromString(xml));
   }
 
   if (reportFilename.indexOf('[testsuitesTitle]') !== -1) {
